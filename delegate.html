@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<title>Delegate a Solana vanity grind: split-key, zero custody</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="description" content="Hand a hard vanity pattern to a remote grinder without ever exposing your private key. Split-key grinding searches offsets against your public point; only you can combine the result into a secret.">
+	<link rel="icon" href="/favicon.svg">
+	<link rel="stylesheet" href="/src/ui/site.css">
+	<link rel="canonical" href="https://solana-vanity.dev/delegate.html">
+	<meta property="og:type" content="website">
+	<meta property="og:title" content="Delegate a Solana vanity grind: split-key, zero custody">
+	<meta property="og:description" content="Hand a hard vanity pattern to a remote grinder without ever exposing your private key. Split-key grinding searches offsets against your public point; only you can combine the result into a secret.">
+</head>
+<body>
+	<a href="#main-content" class="skip-link">Skip to main content</a>
+	<canvas id="bg" aria-hidden="true"></canvas>
+	<header class="site-nav">
+		<a class="brand" href="/"><span class="brand-mark"></span> solana-vanity</a>
+		<nav>
+			<a href="/">Grinder</a>
+			<a href="/rarity.html">Rarity</a>
+			<a href="/delegate.html" aria-current="page">Delegate</a>
+			<a href="/verify.html">Verify</a>
+			<a href="/docs.html">Docs</a>
+			<a href="https://github.com/nirholas/solana-vanity" rel="noopener">GitHub</a>
+		</nav>
+	</header>
+
+	<main id="main-content">
+		<h1>✦ Delegate a grind, keep the key</h1>
+		<p class="lede">
+			The reason nobody sane buys a vanity wallet is that the seller sees the key they sell you. Split-key grinding removes the
+			objection with arithmetic instead of a promise: your browser picks a secret scalar <code>a1</code> and publishes only the
+			point <code>P1 = a1·B</code>. The remote grinder searches offsets <code>a2</code> until <code>P1 + a2·B</code> matches your
+			pattern, then hands back <code>a2</code>. It never sees <code>a1</code>, so it cannot compute the final key, and you combine
+			<code>aFinal = (a1 + a2) mod L</code> here, in this tab.
+		</p>
+
+		<div class="card">
+			<h2 style="font-family:var(--font-display);font-size:1rem;margin:0 0 .5rem">1 · Your secret share</h2>
+			<p class="lede" style="font-size:.84rem;margin-bottom:.6rem">Generated in this tab with the browser's CSPRNG. <code>a1</code> is never sent anywhere.</p>
+			<div class="actions" style="margin-top:.3rem"><button id="gen" class="btn primary" type="button">Generate a1 and P1</button></div>
+			<div id="share" hidden style="margin-top:.9rem">
+				<div class="kv"><span class="k">P1 (public, sent to the grinder)</span><span class="v mono" id="p1">not generated yet</span></div>
+				<div class="kv"><span class="k">a1 (secret, stays here)</span><span class="v mono" id="a1">held in memory only</span></div>
+			</div>
+		</div>
+
+		<div class="card" style="margin-top:1rem">
+			<h2 style="font-family:var(--font-display);font-size:1rem;margin:0 0 .5rem">2 · The pattern</h2>
+			<div class="pattern-grid">
+				<div class="pattern-field">
+					<label for="prefix">Starts with</label>
+					<input id="prefix" type="text" maxlength="6" placeholder="e.g. AGNT" autocomplete="off" spellcheck="false" />
+					<span class="affix-hint">Base58 · max 6</span>
+				</div>
+				<div class="pattern-field">
+					<label for="suffix">Ends with</label>
+					<input id="suffix" type="text" maxlength="6" placeholder="e.g. pump" autocomplete="off" spellcheck="false" />
+					<span class="affix-hint">Base58 · max 6</span>
+				</div>
+			</div>
+			<label class="ci-toggle" for="ci"><input type="checkbox" id="ci" /><span>Case-insensitive: much cheaper, but the casing is not yours to choose.</span></label>
+			<div class="row"><span id="est">type a pattern to see what it costs</span><span id="tier"></span></div>
+			<div class="actions">
+				<button id="run" class="btn primary" type="button" disabled>Delegate the grind</button>
+				<button id="cancel" class="btn" type="button" hidden>Stop</button>
+			</div>
+			<div id="progress" hidden class="progress">
+				<div class="live">
+					<div><div class="stat" id="rounds">0</div><div style="font-size:.75rem;color:#555">requests</div></div>
+					<div style="text-align:right"><div class="stat" id="attempts">0</div><div style="font-size:.75rem;color:#555">offsets tested remotely</div></div>
+				</div>
+			</div>
+			<div id="err" hidden class="error"></div>
+			<div id="out" hidden></div>
+		</div>
+
+		<div class="section-divider">
+			<h2>What you get, and the one honest catch</h2>
+			<div class="card">
+				<p class="lede" style="font-size:.86rem;margin:0 0 .7rem">
+					The combined scalar controls the address, signs for it, and is a perfectly valid Solana account. But it is a <strong>raw
+					Ed25519 scalar</strong>, not a 32-byte seed. You cannot invert SHA-512 to find a seed that expands to a chosen scalar.
+					So a split-key wallet is an <em>expanded</em> key.
+				</p>
+				<div class="kv"><span class="k">Signs transactions</span><span class="v">yes</span></div>
+				<div class="kv"><span class="k">Imports into a seed-only wallet</span><span class="v">no</span></div>
+				<div class="kv"><span class="k">Works with libsodium / an SDK signer</span><span class="v">yes</span></div>
+				<p class="lede" style="font-size:.82rem;margin:.7rem 0 0">
+					That trade is stated here rather than discovered later. If you need a seed-importable key, grind it yourself on the
+					<a href="/">grinder page</a>; if you need a hard pattern and control your own signing, this is strictly better than trusting a seller.
+				</p>
+			</div>
+		</div>
+	</main>
+
+	<footer class="site-foot">
+		<span>Apache-2.0 · <a href="https://github.com/nirholas/solana-vanity" rel="noopener">source</a> · <a href="/llms.txt">llms.txt</a> · <a href="/openapi.json">OpenAPI</a> · <a href="/.well-known/agents.json">agent card</a></span>
+		<span>Keys are generated in your browser. This page has no analytics and no key ever leaves the tab.</span>
+	</footer>
+
+	<script type="module" src="/src/ui/scene.js"></script>
+	<script type="module" src="/src/ui/delegate.js"></script>
+</body>
+</html>

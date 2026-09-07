@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<title>Verify a proof-of-grind certificate</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="description" content="Check a signed vanity-address certificate end to end in your own browser: signature, key ring, difficulty claim, rarity claim, and the split-key non-custody equation.">
+	<link rel="icon" href="/favicon.svg">
+	<link rel="stylesheet" href="/src/ui/site.css">
+	<link rel="canonical" href="https://solana-vanity.dev/verify.html">
+	<meta property="og:type" content="website">
+	<meta property="og:title" content="Verify a proof-of-grind certificate">
+	<meta property="og:description" content="Check a signed vanity-address certificate end to end in your own browser: signature, key ring, difficulty claim, rarity claim, and the split-key non-custody equation.">
+</head>
+<body>
+	<a href="#main-content" class="skip-link">Skip to main content</a>
+	<canvas id="bg" aria-hidden="true"></canvas>
+	<header class="site-nav">
+		<a class="brand" href="/"><span class="brand-mark"></span> solana-vanity</a>
+		<nav>
+			<a href="/">Grinder</a>
+			<a href="/rarity.html">Rarity</a>
+			<a href="/delegate.html">Delegate</a>
+			<a href="/verify.html" aria-current="page">Verify</a>
+			<a href="/docs.html">Docs</a>
+			<a href="https://github.com/nirholas/solana-vanity" rel="noopener">GitHub</a>
+		</nav>
+	</header>
+
+	<main id="main-content">
+		<h1>✦ Verify a certificate</h1>
+		<p class="lede">
+			Paste a proof-of-grind certificate. Verification runs <strong>in this tab</strong> and trusts nothing inside the document:
+			every claim is recomputed from first principles, and the signature is checked against the key ring published at
+			<a href="/.well-known/solana-vanity.json">/.well-known/solana-vanity.json</a> rather than the key the certificate names for itself.
+		</p>
+		<div class="card">
+			<label for="cert">Certificate JSON</label>
+			<textarea id="cert" class="t" rows="10" spellcheck="false" placeholder='{ "protocol": "three-pog/v1", … }'></textarea>
+			<div class="actions">
+				<button id="verify" class="btn primary" type="button">Verify</button>
+				<label class="btn" for="file" style="cursor:pointer">Load a file<input id="file" type="file" accept="application/json,.json" hidden /></label>
+			</div>
+			<div id="err" hidden class="error"></div>
+			<div id="out" hidden></div>
+		</div>
+		<div class="section-divider">
+			<h2>What a certificate can and cannot prove</h2>
+			<div class="card">
+				<p class="lede" style="font-size:.86rem;margin:0 0 .6rem">
+					It proves the issuer signed a specific set of facts about a specific address: the pattern, the difficulty under a named
+					model, the rarity, and a freshness nonce that makes re-selling the same address as "freshly ground" detectable.
+					For a split-key grind it additionally proves <code>P1 + a2·B == address</code>, which is a mathematical statement that the
+					issuer could not have held the private key.
+				</p>
+				<p class="lede" style="font-size:.86rem;margin:0">
+					It cannot prove that a key was never copied by whoever ran the grinder, unless that grinder was split-key or ran on your
+					own machine. That is why the browser grinder is the default here and the custodial server endpoint is off by default.
+				</p>
+			</div>
+		</div>
+	</main>
+
+	<footer class="site-foot">
+		<span>Apache-2.0 · <a href="https://github.com/nirholas/solana-vanity" rel="noopener">source</a> · <a href="/llms.txt">llms.txt</a> · <a href="/openapi.json">OpenAPI</a> · <a href="/.well-known/agents.json">agent card</a></span>
+		<span>Keys are generated in your browser. This page has no analytics and no key ever leaves the tab.</span>
+	</footer>
+
+	<script type="module" src="/src/ui/scene.js"></script>
+	<script type="module" src="/src/ui/verify.js"></script>
+</body>
+</html>

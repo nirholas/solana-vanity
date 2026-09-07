@@ -1,0 +1,5 @@
+# The compiled artifacts in this directory ARE checked in, so the project builds
+# without a Rust toolchain. wasm-pack writes a `*` ignore here on every build;
+# this file overrides it. Run `npm run build:wasm` after editing
+# crates/vanity-grinder/src/lib.rs.
+!*

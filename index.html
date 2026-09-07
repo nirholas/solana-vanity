@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<title>Solana Vanity Wallet Generator: grind a custom address in your browser</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="description" content="Open-source Solana vanity address generator. Grind a wallet that starts or ends with characters you choose, entirely in your browser across every CPU core, with WebAssembly Ed25519. The secret key never leaves your machine.">
+	<link rel="icon" href="/favicon.svg">
+	<link rel="stylesheet" href="/src/ui/site.css">
+	<link rel="canonical" href="https://solana-vanity.dev/">
+	<meta property="og:type" content="website">
+	<meta property="og:title" content="Solana Vanity Wallet Generator">
+	<meta property="og:description" content="Grind a Solana address with a custom prefix or suffix, entirely in your browser. Open source, Apache-2.0, no server ever sees your key.">
+	<meta property="og:image" content="/og.svg">
+	<meta name="twitter:card" content="summary_large_image">
+	<script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"Solana Vanity Wallet Generator","applicationCategory":"DeveloperApplication","operatingSystem":"Any (browser)","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"license":"https://www.apache.org/licenses/LICENSE-2.0","codeRepository":"https://github.com/nirholas/solana-vanity","description":"Client-side Solana vanity address grinder with an exact Base58 difficulty model, signed proof-of-grind certificates, and trustless split-key delegated grinding."}</script>
+
+
+</head>
+<body>
+	<a href="#main-content" class="skip-link">Skip to main content</a>
+	<canvas id="bg" aria-hidden="true"></canvas>
+	<header class="site-nav">
+		<a class="brand" href="/"><span class="brand-mark"></span> solana-vanity</a>
+		<nav>
+			<a href="/" aria-current="page">Grinder</a>
+			<a href="/rarity.html">Rarity</a>
+			<a href="/delegate.html">Delegate</a>
+			<a href="/verify.html">Verify</a>
+			<a href="/docs.html">Docs</a>
+			<a href="https://github.com/nirholas/solana-vanity" rel="noopener">GitHub</a>
+		</nav>
+	</header>
+
+	<main id="main-content">
+		<h1>✦ Solana vanity wallet generator</h1>
+		<p class="lede">
+			Grind a Solana wallet address that <strong>starts with</strong>, <strong>ends with</strong>, or is bookended by characters of your choice, for your agent, treasury, or anywhere a memorable address matters.
+			<strong>Runs entirely in your browser.</strong> The secret key is generated on your device and never crosses the network.
+		</p>
+		<p class="lede" style="margin-top:-0.5rem;font-size:.85rem">
+			Every estimate on this page uses the <a href="/docs.html#difficulty">exact Base58 distribution</a>, not the 58ⁿ approximation every other grinder ships:
+			a leading <code>K</code> is 17× rarer than a leading <code>5</code>, and pretending otherwise misprices a grind by more than an order of magnitude.
+			Need a pattern too slow for one machine? <a href="/delegate.html">Delegate it</a> without handing anyone your key.
+		</p>
+
+		<div class="card">
+			<div class="pattern-grid">
+				<div class="pattern-field">
+					<label for="prefix">Starts with</label>
+					<input id="prefix" type="text" maxlength="6" placeholder="e.g. AGNT" autocomplete="off" spellcheck="false" inputmode="latin" />
+					<span class="affix-hint" id="prefix-hint">Base58 · max 6</span>
+				</div>
+				<div class="pattern-field">
+					<label for="suffix">Ends with</label>
+					<input id="suffix" type="text" maxlength="6" placeholder="e.g. pump" autocomplete="off" spellcheck="false" inputmode="latin" />
+					<span class="affix-hint" id="suffix-hint">Base58 · max 6</span>
+				</div>
+			</div>
+
+			<label class="ci-toggle" for="ignore-case">
+				<input type="checkbox" id="ignore-case" />
+				<span>Case-insensitive: match letters in any case. Much faster to grind, but you don't get to choose the casing of the result.</span>
+			</label>
+
+			<div class="combo-warn" id="combo-warn" aria-live="polite"></div>
+
+			<div class="preview" id="preview" aria-live="polite"></div>
+
+			<div class="meter" aria-hidden="true">
+				<div class="seg" data-seg="1"></div>
+				<div class="seg" data-seg="2"></div>
+				<div class="seg" data-seg="3"></div>
+				<div class="seg" data-seg="4"></div>
+				<div class="seg" data-seg="5"></div>
+				<div class="seg" data-seg="6"></div>
+			</div>
+
+			<div class="row">
+				<span id="est">type a prefix or suffix to see estimated time</span>
+				<span id="tier"></span>
+			</div>
+
+			<div class="chips" aria-label="Suggested patterns">
+				<button class="chip" data-prefix="AGNT" type="button">AGNT…<span class="chip-est"></span></button>
+				<button class="chip" data-prefix="BOT"  type="button">BOT…<span class="chip-est"></span></button>
+				<button class="chip" data-prefix="AI"   type="button">AI…<span class="chip-est"></span></button>
+				<button class="chip" data-suffix="pump" type="button">…pump<span class="chip-est"></span></button>
+				<button class="chip" data-prefix="GM" data-suffix="gm" type="button">GM…gm<span class="chip-est"></span></button>
+				<button class="chip" data-suffix="3" type="button">…3<span class="chip-est"></span></button>
+			</div>
+
+			<div class="cores">
+				<div class="cores-head">
+					<label for="core-count">Compute: CPU cores to use</label>
+					<span class="cores-val"><b id="core-count-val">4</b> / <span id="core-max">8</span></span>
+				</div>
+				<div class="cores-row">
+					<input id="core-count" type="range" min="1" max="8" value="4" step="1" aria-label="Number of CPU cores to use for grinding" />
+				</div>
+				<div class="cores-ticks" id="core-ticks" aria-label="Quick core presets"></div>
+				<div class="cores-hint" id="cores-hint">More cores = faster, but a heavier load on your machine. Pause anytime to free them.</div>
+			</div>
+
+			<div class="actions">
+				<button id="grind" class="btn primary" type="button" disabled>Generate wallet</button>
+				<button id="pause" class="btn" type="button" hidden>Pause</button>
+				<button id="stop" class="btn" type="button" hidden>Stop</button>
+			</div>
+
+			<div id="progress" hidden class="progress">
+				<div class="live">
+					<div>
+						<div class="stat" id="rate">0/s</div>
+						<div style="font-size:.75rem;color:#555">tries/sec across <span id="cores">?</span> cores<span id="paused-tag" class="paused-tag" hidden>paused</span></div>
+					</div>
+					<div style="text-align:right">
+						<div class="stat"><span id="attempts">0</span></div>
+						<div style="font-size:.75rem;color:#555">attempts · eta <span id="eta">…</span></div>
+					</div>
+				</div>
+				<div class="scan" id="scan"></div>
+			</div>
+
+			<div id="error" hidden class="error"></div>
+			<div id="result" hidden></div>
+		</div>
+
+		<div class="section-divider">
+			<h2>How this differs from the grinder you were about to use</h2>
+			<p class="lede">Three things, all of them checkable in this repository.</p>
+			<div class="card">
+				<div class="kv"><span class="k">Honest difficulty</span><span class="v"><a href="/docs.html#difficulty">exact Base58 model</a></span></div>
+				<div class="kv"><span class="k">Provenance</span><span class="v"><a href="/verify.html">signed certificates</a></span></div>
+				<div class="kv"><span class="k">Delegation</span><span class="v"><a href="/delegate.html">split-key, zero custody</a></span></div>
+				<div class="kv"><span class="k">License</span><span class="v">Apache-2.0</span></div>
+				<p class="lede" style="margin:.9rem 0 0;font-size:.82rem">
+					The grind loop is Rust compiled to WebAssembly (<code>crates/vanity-grinder</code>), the maths is a BigInt interval count over the full 2²⁵⁶ key space
+					(<code>src/base58-distribution.js</code>), and both are covered by tests you can run with <code>npm test</code>.
+				</p>
+			</div>
+		</div>
+	</main>
+
+	<footer class="site-foot">
+		<span>Apache-2.0 · <a href="https://github.com/nirholas/solana-vanity" rel="noopener">source</a> · <a href="/llms.txt">llms.txt</a> · <a href="/openapi.json">OpenAPI</a> · <a href="/.well-known/agents.json">agent card</a></span>
+		<span>Keys are generated in your browser. This page has no analytics and no key ever leaves the tab.</span>
+	</footer>
+
+	<script type="module" src="/src/ui/scene.js"></script>
+	<script type="module" src="/src/ui/app.js"></script>
+</body>
+</html>

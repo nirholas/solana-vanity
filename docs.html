@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<title>Documentation for solana-vanity</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="description" content="How solana-vanity computes Base58 difficulty exactly, how proof-of-grind certificates work, how split-key delegation keeps a grinder from ever holding your key, and how to run the whole thing yourself.">
+	<link rel="icon" href="/favicon.svg">
+	<link rel="stylesheet" href="/src/ui/site.css">
+	<link rel="canonical" href="https://solana-vanity.dev/docs.html">
+	<meta property="og:type" content="website">
+	<meta property="og:title" content="Documentation for solana-vanity">
+	<meta property="og:description" content="The difficulty model, the certificate protocol, split-key delegation, the API, the CLI, the MCP server and how to self-host.">
+</head>
+<body>
+	<a href="#main-content" class="skip-link">Skip to main content</a>
+	<canvas id="bg" aria-hidden="true"></canvas>
+	<header class="site-nav">
+		<a class="brand" href="/"><span class="brand-mark"></span> solana-vanity</a>
+		<nav>
+			<a href="/">Grinder</a>
+			<a href="/rarity.html">Rarity</a>
+			<a href="/delegate.html">Delegate</a>
+			<a href="/verify.html">Verify</a>
+			<a href="/docs.html" aria-current="page">Docs</a>
+			<a href="https://github.com/nirholas/solana-vanity" rel="noopener">GitHub</a>
+		</nav>
+	</header>
+
+	<main id="main-content" class="docs">
+		<h1>✦ Documentation</h1>
+		<p class="lede">
+			Everything this project does, why it does it that way, and how to run it yourself. Nothing here is aspirational:
+			every command below runs against the code in this repository.
+		</p>
+
+		<nav class="toc" aria-label="Contents">
+			<a href="#quickstart">Quick start</a>
+			<a href="#difficulty">The difficulty model</a>
+			<a href="#certificates">Proof-of-grind certificates</a>
+			<a href="#splitkey">Split-key delegation</a>
+			<a href="#api">HTTP API</a>
+			<a href="#cli">CLI</a>
+			<a href="#mcp">MCP server</a>
+			<a href="#selfhost">Self-hosting</a>
+			<a href="#security">Security model</a>
+		</nav>
+
+		<section id="quickstart" class="doc">
+			<h2>Quick start</h2>
+			<p>Grind in the browser at <a href="/">the grinder</a>: nothing to install, and the key never leaves the tab.</p>
+			<p>Locally, with Node 20 or newer:</p>
+			<pre><code>git clone https://github.com/nirholas/solana-vanity
+cd solana-vanity
+npm install
+npm run dev          # site on :5180, API on :8787</code></pre>
+			<p>Or grind from the command line without cloning anything:</p>
+			<pre><code>npx solana-vanity grind --prefix AGNT --suffix pump
+npx solana-vanity quote --prefix AGNT
+npx solana-vanity appraise &lt;address&gt;</code></pre>
+		</section>
+
+		<section id="difficulty" class="doc">
+			<h2>The difficulty model</h2>
+			<p>
+				Almost every vanity tool models an <em>n</em>-character Solana pattern as 58<sup>n</sup> expected attempts. That is
+				correct for trailing characters and wrong for the leading one, because Base58 is a positional encoding of a 256-bit
+				integer, not a string of independent symbols.
+			</p>
+			<p>
+				A Solana public key is 32 bytes, so once leading zero bytes are stripped it spans [2<sup>248</sup>, 2<sup>256</sup>).
+				Base58 renders such a value in 44 digits when it is at least 58<sup>43</sup> and 43 digits otherwise, and those two
+				thresholds carve the alphabet into six bands:
+			</p>
+			<pre><code>'1'      P = 3.906e-3   a leading zero byte, exactly 1/256
+'2'-'3'  P = 5.804e-2   44-digit encodings only
+'4'      P = 5.814e-2   plus the sliver of 43-digit that clears 2^248
+'5'-'H'  P = 5.904e-2   3.43x easier than the uniform model claims
+'J'      P = 1.433e-2   where the 44-digit range runs out
+'K'-'z'  P = 1.001e-3   17.2x harder than claimed - 40 of the 58 symbols</code></pre>
+			<p>
+				<code>src/base58-distribution.js</code> counts this exactly with BigInt interval arithmetic over the whole key space:
+				it is not a fitted table or an approximation. The consequence is practical: a pattern starting with <code>K</code> is
+				seventeen times more expensive than a naive quote says, and one starting with <code>5</code> is three times cheaper.
+				The <a href="/rarity.html">rarity page</a> renders the full table live.
+			</p>
+			<p>
+				Suffixes really are uniform at 58<sup>-n</sup>: the low-order digits of a uniform 256-bit integer are equidistributed
+				to within about 10<sup>-53</sup> at the six-character ceiling, far below double precision.
+			</p>
+		</section>
+
+		<section id="certificates" class="doc">
+			<h2>Proof-of-grind certificates</h2>
+			<p>
+				A certificate is a signed statement about a ground address, in a format anyone can verify offline. It carries the
+				pattern, the difficulty under a named model, a rarity breakdown, a freshness nonce, and, for split-key grinds, a
+				non-custody assertion. It is signed with the service's long-lived Ed25519 key, published at
+				<a href="/.well-known/solana-vanity.json">/.well-known/solana-vanity.json</a>.
+			</p>
+			<p>Verification recomputes every claim rather than trusting the document:</p>
+			<pre><code>import { verifyProofOfGrind } from 'solana-vanity/proof-of-grind';
+
+const keyring = (await (await fetch(BASE + '/.well-known/solana-vanity.json')).json()).attestationKeys;
+const result  = verifyProofOfGrind(certificate, { keyring });
+
+result.valid;                   // true / false
+result.checks;                  // per-check audit with human-readable detail</code></pre>
+			<p>
+				The freshness nonce exists so the same address cannot be sold twice as "freshly ground": a verifier holding the
+				canonical first certificate for an address detects a duplicate. The <a href="/verify.html">verify page</a> runs this
+				code in your browser.
+			</p>
+			<p><strong>What a certificate cannot prove:</strong> that whoever ran the grinder did not keep a copy of the key. Only
+			grinding it yourself, or split-key delegation, proves that. The certificate says so explicitly by naming the grind format.</p>
+		</section>
+
+		<section id="splitkey" class="doc">
+			<h2>Split-key delegation</h2>
+			<p>
+				Hard patterns need more compute than one browser tab has, and handing the job to a remote grinder normally means
+				handing over the key. Split-key grinding removes that trade with group arithmetic on Ed25519, basepoint <code>B</code>,
+				scalar order <code>L</code>:
+			</p>
+			<ol>
+				<li>The requester picks a secret scalar <code>a1</code> locally and publishes only <code>P1 = a1·B</code>.</li>
+				<li>A worker searches offsets <code>a2</code>, testing <code>A = P1 + a2·B</code> against the pattern. It knows
+					<code>a2</code> and <code>P1</code> but not <code>a1</code>, so it cannot compute the final secret.</li>
+				<li>On a hit the worker returns <code>(a2, A)</code>. Anyone can check <code>P1 + a2·B == A</code> with no secret.</li>
+				<li>The requester combines <code>aFinal = (a1 + a2) mod L</code> on their own machine. Because
+					<code>aFinal·B = P1 + a2·B = A</code>, that scalar controls exactly the vanity address, and it only ever exists there.</li>
+			</ol>
+			<p>
+				The offset is not a secret (it is useless without <code>a1</code>), so it can travel in the clear, and the
+				certificate can publish <code>a2·B</code> as a checkable non-custody proof.
+			</p>
+			<p><strong>The honest catch:</strong> <code>aFinal</code> is a raw Ed25519 scalar, not a 32-byte seed. You cannot invert
+			SHA-512 to find a seed that expands to a chosen scalar, so a split-key wallet is an <em>expanded</em> key: it signs
+			perfectly and is a valid Solana account, but seed-only wallet imports will reject it. Use it with an SDK signer, or grind
+			a seed-based key yourself when import matters.</p>
+		</section>
+
+		<section id="api" class="doc">
+			<h2>HTTP API</h2>
+			<p>Machine-readable schema: <a href="/openapi.json">/openapi.json</a>. Agent card:
+			<a href="/.well-known/agents.json">/.well-known/agents.json</a>.</p>
+			<table class="api">
+				<thead><tr><th>Endpoint</th><th>What it does</th></tr></thead>
+				<tbody>
+					<tr><td><code>POST /api/quote</code></td><td>Exact probability, expected attempts, rarity tier and ETA for a pattern. Also returns the naive 58<sup>n</sup> figure and the ratio, so you can see the correction.</td></tr>
+					<tr><td><code>POST /api/appraise</code></td><td>Rarity of an address that already exists.</td></tr>
+					<tr><td><code>GET /api/difficulty/leading-characters</code></td><td>The exact Base58 leading-character table.</td></tr>
+					<tr><td><code>POST /api/certify</code></td><td>Sign a proof-of-grind certificate. Refuses to attest an address that does not match the claimed pattern.</td></tr>
+					<tr><td><code>POST /api/verify</code></td><td>Verify a certificate against the published key ring.</td></tr>
+					<tr><td><code>POST /api/splitkey/grind</code></td><td>Delegated grinding. Send <code>p1</code> and a pattern; get an offset back.</td></tr>
+					<tr><td><code>POST /api/splitkey/verify</code></td><td>Check that an offset really produces a claimed address.</td></tr>
+					<tr><td><code>POST /api/grind</code></td><td>Custodial server-side grind. <strong>Disabled unless the operator sets <code>ALLOW_SERVER_GRIND=1</code>.</strong></td></tr>
+				</tbody>
+			</table>
+			<pre><code>curl -s https://solana-vanity.dev/api/quote \
+  -H 'content-type: application/json' \
+  -d '{"prefix":"AGNT","attemptsPerSecond":120000}'</code></pre>
+		</section>
+
+		<section id="cli" class="doc">
+			<h2>CLI</h2>
+			<pre><code>npx solana-vanity grind --prefix AGNT --suffix pump --out wallet.json
+npx solana-vanity grind --prefix AGNT --mnemonic       # a seed phrase, not a raw key
+npx solana-vanity delegate --prefix AGNT --api https://solana-vanity.dev
+npx solana-vanity quote --prefix AGNT --rate 120000
+npx solana-vanity appraise 5CyxU...  --suffix-len 4
+npx solana-vanity verify certificate.json</code></pre>
+			<p>
+				<code>grind</code> uses the same WebAssembly module as the site, across every core the machine reports.
+				<code>delegate</code> runs the split-key protocol against a remote API and combines locally, so the remote side never
+				sees a secret, which makes it safe to point at a service you do not control.
+			</p>
+		</section>
+
+		<section id="mcp" class="doc">
+			<h2>MCP server</h2>
+			<p>Six tools over the Model Context Protocol, so an assistant can quote, appraise, grind, delegate and verify:</p>
+			<pre><code>{
+  "mcpServers": {
+    "solana-vanity": { "command": "npx", "args": ["-y", "solana-vanity", "mcp"] }
+  }
+}</code></pre>
+			<table class="api">
+				<tbody>
+					<tr><td><code>vanity_quote</code></td><td>Difficulty, rarity and ETA for a pattern.</td></tr>
+					<tr><td><code>vanity_appraise</code></td><td>Rarity of an existing address.</td></tr>
+					<tr><td><code>vanity_grind</code></td><td>Grind locally on the machine running the server.</td></tr>
+					<tr><td><code>vanity_split_key_grind</code></td><td>Delegate to a remote API without exposing a key.</td></tr>
+					<tr><td><code>vanity_verify_certificate</code></td><td>Verify a certificate offline.</td></tr>
+					<tr><td><code>vanity_leading_characters</code></td><td>The exact Base58 probability table.</td></tr>
+				</tbody>
+			</table>
+		</section>
+
+		<section id="selfhost" class="doc">
+			<h2>Self-hosting</h2>
+			<p>One Fetch handler, two hosts. On Node:</p>
+			<pre><code>npm run build
+ATTESTATION_SEED=$(node server/keygen.mjs | head -1 | cut -d= -f2) npm start</code></pre>
+			<p>On Cloudflare Workers, with the built site served from the assets binding:</p>
+			<pre><code>npm run build
+npx wrangler secret put ATTESTATION_SEED
+npx wrangler deploy</code></pre>
+			<p>
+				<code>/api/grind</code> is the one endpoint that behaves differently on the edge: it needs the WebAssembly grinder
+				loaded from disk, so a Worker answers 501 and points at <code>/api/splitkey/grind</code>, which is pure arithmetic and
+				runs anywhere.
+			</p>
+			<table class="api">
+				<thead><tr><th>Variable</th><th>Meaning</th></tr></thead>
+				<tbody>
+					<tr><td><code>ATTESTATION_SEED</code></td><td>32-byte Ed25519 seed (hex or Base58) for signing certificates. Unset means an ephemeral per-process key, which the API reports in every response.</td></tr>
+					<tr><td><code>ALLOW_SERVER_GRIND</code></td><td>Set to <code>1</code> to enable the custodial grind endpoint. Off by default, on purpose.</td></tr>
+					<tr><td><code>PORT</code></td><td>Node listen port. Default 8787.</td></tr>
+				</tbody>
+			</table>
+		</section>
+
+		<section id="security" class="doc">
+			<h2>Security model</h2>
+			<table class="api">
+				<thead><tr><th>Path</th><th>Who can see the key</th></tr></thead>
+				<tbody>
+					<tr><td>Browser grinder</td><td>Only your browser. No network call carries key material.</td></tr>
+					<tr><td>CLI</td><td>Only your machine.</td></tr>
+					<tr><td>Split-key delegation</td><td>Only you. The remote side holds an offset that is useless without your <code>a1</code>.</td></tr>
+					<tr><td><code>POST /api/grind</code></td><td>The server process and every hop in between. Disabled by default; treat any key it returns as compromised for anything of value.</td></tr>
+				</tbody>
+			</table>
+			<p>
+				The grind loop derives each candidate from a fresh 32-byte CSPRNG seed, incrementing only the low four bytes as a
+				counter within a batch, so keys are unpredictable as long as the seed source is. The returned 64-byte secret key uses
+				Solana's standard <code>[seed][pubkey]</code> layout and imports directly into <code>Keypair.fromSecretKey()</code>.
+			</p>
+			<p>Found a problem? <a href="https://github.com/nirholas/solana-vanity/security/advisories/new">Report it privately</a>.</p>
+		</section>
+	</main>
+
+	<footer class="site-foot">
+		<span>Apache-2.0 · <a href="https://github.com/nirholas/solana-vanity" rel="noopener">source</a> · <a href="/llms.txt">llms.txt</a> · <a href="/openapi.json">OpenAPI</a> · <a href="/.well-known/agents.json">agent card</a></span>
+		<span>Keys are generated in your browser. This page has no analytics and no key ever leaves the tab.</span>
+	</footer>
+
+	<script type="module" src="/src/ui/scene.js"></script>
+</body>
+</html>

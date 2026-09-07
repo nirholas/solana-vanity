@@ -1,0 +1,34 @@
+solana-vanity
+Copyright 2026 nirholas
+
+The open Solana vanity address foundry.
+https://github.com/nirholas/solana-vanity
+
+Licensed under the Apache License, Version 2.0. See the LICENSE file for the
+full terms.
+
+Portions of this project were first developed inside the three.ws monorepo
+(https://github.com/nirholas/three.ws) and are re-licensed here under the same
+Apache License, Version 2.0:
+
+  crates/vanity-grinder/          the Rust Ed25519 grind loop
+  src/base58-distribution.js      the exact Base58 difficulty model
+  src/validation.js               pattern validation and difficulty dispatch
+  src/rarity.js                   rarity tiers, bonuses and appraisal
+  src/grinder*.js                 browser and Node grinders
+  src/mnemonic*.js                BIP-39 seed-phrase grinding
+  src/proof-of-grind.js           the certificate format
+  src/verifiable-grind.js         the commit-reveal receipt protocol
+  src/split-key.js                trustless split-key grinding
+  src/ui/site.css                 the vanity wallet page stylesheet
+
+Third-party dependencies keep their own licenses:
+
+  @noble/curves, @noble/hashes    MIT, Paul Miller
+  bs58, base-x                    MIT
+  @solana/web3.js                 Apache-2.0, Solana Labs
+  three                           MIT, three.js authors
+  zod                             MIT, Colin McDonnell
+  @modelcontextprotocol/sdk       MIT, Anthropic
+
+Nothing in this NOTICE modifies the terms of the Apache License, Version 2.0.

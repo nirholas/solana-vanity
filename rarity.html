@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<title>Solana address rarity appraiser: how much work is that address worth?</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="description" content="Paste any Solana address and see the exact expected attempts behind its leading and trailing characters, its rarity tier, and the honest Base58 leading-character probability table.">
+	<link rel="icon" href="/favicon.svg">
+	<link rel="stylesheet" href="/src/ui/site.css">
+	<link rel="canonical" href="https://solana-vanity.dev/rarity.html">
+	<meta property="og:type" content="website">
+	<meta property="og:title" content="Solana address rarity appraiser: how much work is that address worth?">
+	<meta property="og:description" content="Paste any Solana address and see the exact expected attempts behind its leading and trailing characters, its rarity tier, and the honest Base58 leading-character probability table.">
+</head>
+<body>
+	<a href="#main-content" class="skip-link">Skip to main content</a>
+	<canvas id="bg" aria-hidden="true"></canvas>
+	<header class="site-nav">
+		<a class="brand" href="/"><span class="brand-mark"></span> solana-vanity</a>
+		<nav>
+			<a href="/">Grinder</a>
+			<a href="/rarity.html" aria-current="page">Rarity</a>
+			<a href="/delegate.html">Delegate</a>
+			<a href="/verify.html">Verify</a>
+			<a href="/docs.html">Docs</a>
+			<a href="https://github.com/nirholas/solana-vanity" rel="noopener">GitHub</a>
+		</nav>
+	</header>
+
+	<main id="main-content">
+		<h1>✦ Rarity appraiser</h1>
+		<p class="lede">
+			Paste a Solana address. This works out which leading and trailing characters look deliberate, how many keypairs a grinder
+			would expect to burn to reproduce them, and where that lands on the tier ladder, all from the exact Base58 distribution,
+			not the 58ⁿ approximation.
+		</p>
+
+		<div class="card">
+			<label for="addr">Solana address</label>
+			<input id="addr" type="text" placeholder="e.g. AGNTvY5kQxrPmL8dW2sTuVzJ1hR4cKnB6gFqXeAdMwZp" autocomplete="off" spellcheck="false" />
+			<div class="pattern-grid" style="margin-top:.9rem">
+				<div class="pattern-field">
+					<label for="plen">Leading characters treated as intentional</label>
+					<input id="plen" type="text" inputmode="numeric" placeholder="auto" autocomplete="off" />
+					<span class="affix-hint">blank = detect automatically</span>
+				</div>
+				<div class="pattern-field">
+					<label for="slen">Trailing characters treated as intentional</label>
+					<input id="slen" type="text" inputmode="numeric" placeholder="0" autocomplete="off" />
+					<span class="affix-hint">e.g. 4 for a …pump tail</span>
+				</div>
+			</div>
+			<label class="ci-toggle" for="ci"><input type="checkbox" id="ci" /><span>Treat the match as case-insensitive.</span></label>
+			<div class="actions"><button id="appraise" class="btn primary" type="button">Appraise</button></div>
+			<div id="err" hidden class="error"></div>
+			<div id="out" hidden></div>
+		</div>
+
+		<div class="section-divider">
+			<h2>The leading character is not uniform</h2>
+			<p class="lede">
+				A Solana address is a 256-bit integer rendered in Base58, not a string of independent symbols. Encoding length varies with
+				magnitude, so the first character lands in bands that differ by 58× in probability. Every quote on this site uses these exact numbers.
+			</p>
+			<div class="card"><div id="table">loading the table…</div></div>
+		</div>
+	</main>
+
+	<footer class="site-foot">
+		<span>Apache-2.0 · <a href="https://github.com/nirholas/solana-vanity" rel="noopener">source</a> · <a href="/llms.txt">llms.txt</a> · <a href="/openapi.json">OpenAPI</a> · <a href="/.well-known/agents.json">agent card</a></span>
+		<span>Keys are generated in your browser. This page has no analytics and no key ever leaves the tab.</span>
+	</footer>
+
+	<script type="module" src="/src/ui/scene.js"></script>
+	<script type="module" src="/src/ui/rarity.js"></script>
+</body>
+</html>
