@@ -19,9 +19,23 @@ import {
 } from '../validation.js';
 import { computeRarity } from '../rarity.js';
 import { setGrindActivity } from './activity.js';
+import { mountHero } from './hero.js';
 
 const $ = (id) => document.getElementById(id);
 const BASE58 = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+
+/**
+ * The hero ring: an address being ground, one quad per character. It is driven
+ * by the same pattern and rate the read-outs use, so it can never show a
+ * different story from the numbers beside it.
+ */
+const heroRing = mountHero($('hero'), {
+	alphabet: BASE58,
+	length: 44,
+	accent: '#ffd54f',
+	accentAlt: '#ff8a65',
+});
+
 const BASE58_RE = /^[1-9A-HJ-NP-Za-km-z]+$/;
 
 /**
@@ -158,6 +172,7 @@ function update() {
 	});
 
 	if (!pfx && !sfx) {
+		heroRing.setPattern('', '');
 		$('preview').innerHTML = `<span class="rest">${esc(sample())}</span>`;
 		$('est').textContent = 'type a prefix or suffix to see estimated time';
 		$('tier').innerHTML = '';
@@ -180,6 +195,7 @@ function update() {
 	}
 
 	$('preview').innerHTML = renderPreview(pfx, sfx);
+	heroRing.setPattern(pfx, sfx);
 	$('est').textContent = `rough estimate: ${fmtTime(estSeconds(pfx, sfx))} on ${cores} cores`;
 	const attempts = expectedAttempts(pfx, sfx, ignoreCase);
 	const effLen = effectiveLength(attempts);
@@ -228,6 +244,7 @@ function endGrindUI() {
 	setPaused(false);
 	setCoreControlsDisabled(false);
 	setGrindActivity(0);
+	heroRing.setActivity(0);
 }
 
 $('grind').addEventListener('click', async () => {
@@ -271,6 +288,8 @@ $('grind').addEventListener('click', async () => {
 
 	abort = new AbortController();
 	controls = {};
+	heroRing.reset();
+	heroRing.setPattern(prefix, suffix);
 	try {
 		const result = await grindVanity({
 			prefix,
@@ -283,7 +302,9 @@ $('grind').addEventListener('click', async () => {
 				$('attempts').textContent = attempts.toLocaleString();
 				$('rate').textContent = paused ? 'paused' : `${Math.round(rate).toLocaleString()}/s`;
 				$('eta').textContent = eta;
-				setGrindActivity(paused ? 0 : Math.min(1, rate / (RATE_PER_CORE * cores)));
+				const load = paused ? 0 : Math.min(1, rate / (RATE_PER_CORE * cores));
+				setGrindActivity(load);
+				heroRing.setActivity(load);
 			},
 		});
 		renderResult(result, prefix, suffix);
@@ -327,6 +348,10 @@ function renderResult(result, prefix, suffix) {
 	const addrHtml = `${head ? `<span class="pfx">${esc(head)}</span>` : ''}${esc(mid)}${tail ? `<span class="sfx">${esc(tail)}</span>` : ''}`;
 	const rate = Math.round(result.attempts / (result.durationMs / 1000));
 	const rarity = computeRarity({ prefix, suffix, ignoreCase });
+	// Write the real address into the ring: the hero stops being a simulation
+	// the moment there is an answer.
+	heroRing.lock(addr);
+	$('hero-caption').textContent = `${addr.slice(0, 6)}…${addr.slice(-4)} · found in ${result.attempts.toLocaleString()} attempts`;
 
 	$('result').hidden = false;
 	$('result').innerHTML = `
