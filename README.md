@@ -7,7 +7,7 @@ browser, across every core, with the honest maths.**
 [![Tests](https://img.shields.io/badge/tests-43%20passing-brightgreen.svg)](./tests)
 [![No custody](https://img.shields.io/badge/keys-never%20leave%20your%20machine-ffd54f.svg)](#security-model)
 
-**Live:** [solana-vanity.global-gargoyle.workers.dev](https://solana-vanity.global-gargoyle.workers.dev) (solana-vanity on a Cloudflare Workers preview deployment: the whole site, the API and the discovery documents, running the code in this repository)
+**Live demo:** [solana-vanity.gold-cornucopia.workers.dev](https://solana-vanity.gold-cornucopia.workers.dev) runs this exact code (site, API and discovery documents) on Cloudflare Workers. It is a credential-free preview deployment and the subdomain is disposable; `npx wrangler deploy` puts it on a durable one.
 
 A complete, production-grade vanity wallet stack: the WebAssembly grinder, the
 site, the HTTP API, a CLI, an MCP server for AI assistants, signed provenance
