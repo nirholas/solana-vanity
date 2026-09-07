@@ -7,6 +7,8 @@ browser, across every core, with the honest maths.**
 [![Tests](https://img.shields.io/badge/tests-43%20passing-brightgreen.svg)](./tests)
 [![No custody](https://img.shields.io/badge/keys-never%20leave%20your%20machine-ffd54f.svg)](#security-model)
 
+**Live:** [solana-vanity.global-gargoyle.workers.dev](https://solana-vanity.global-gargoyle.workers.dev) (solana-vanity on a Cloudflare Workers preview deployment: the whole site, the API and the discovery documents, running the code in this repository)
+
 A complete, production-grade vanity wallet stack: the WebAssembly grinder, the
 site, the HTTP API, a CLI, an MCP server for AI assistants, signed provenance
 certificates, and a delegation protocol that lets somebody else do the work
@@ -198,6 +200,7 @@ curl -s http://localhost:8787/api/quote \
 | [docs/protocol-split-key.md](docs/protocol-split-key.md) | The non-custodial delegation protocol, its wire format, and its one real limitation. |
 | [docs/protocol-proof-of-grind.md](docs/protocol-proof-of-grind.md) | The certificate format and every check a verifier runs. |
 | [docs/deploy.md](docs/deploy.md) | Node, Docker, Cloud Run, Cloudflare Workers, and static-only. |
+| [docs/discoverability.md](docs/discoverability.md) | The documents crawlers, assistants and agent runtimes read, and where to submit the project. |
 | [SECURITY.md](SECURITY.md) | What this project promises, and what it does not. |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | Running it, the quality bar, rebuilding the WASM. |
 
