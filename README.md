@@ -119,6 +119,24 @@ docker build -t solana-vanity .
 docker run -p 8787:8787 -e ATTESTATION_SEED=<hex> solana-vanity
 ```
 
+Install the CLI and library from npm:
+
+```bash
+npm install solana-vanity
+```
+
+```js
+import { grindVanityNode, rarity, splitKey } from 'solana-vanity';
+
+const result = await grindVanityNode({ prefix: 'SOL', maxAttempts: 1_000_000 });
+const score = rarity.appraiseAddress(result.publicKey);
+const requester = splitKey.generateRequesterShare();
+```
+
+The package root exports the Node grinder directly. Mnemonic, proof-of-grind,
+rarity, split-key, validation and verifiable-grind helpers are available as
+namespaces; the existing documented subpath imports remain supported.
+
 ---
 
 ## The pieces
