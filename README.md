@@ -270,3 +270,7 @@ accepts certificates issued by that deployment, and vice versa.
 ## Licence
 
 [Apache-2.0](./LICENSE). See [NOTICE](./NOTICE) for attribution.
+
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=nirholas/solana-vanity&type=Date)](https://www.star-history.com/#nirholas/solana-vanity&Date)
