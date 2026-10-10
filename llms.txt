@@ -1,0 +1,28 @@
+# solana-vanity
+
+> Open-source Solana vanity address generator: WebAssembly Ed25519 grinding in the browser, an exact Base58 difficulty model, signed proof-of-grind certificates and trustless split-key delegation.
+
+solana-vanity is an open-source repository by nirholas, part of the three.ws ecosystem.
+
+## Docs
+
+- [README](https://github.com/nirholas/solana-vanity/blob/HEAD/README.md): install, usage and reference
+- [Why another vanity generator](https://github.com/nirholas/solana-vanity/blob/HEAD/README.md#why-another-vanity-generator)
+- [Install and run](https://github.com/nirholas/solana-vanity/blob/HEAD/README.md#install-and-run)
+- [The pieces](https://github.com/nirholas/solana-vanity/blob/HEAD/README.md#the-pieces)
+- [CLI](https://github.com/nirholas/solana-vanity/blob/HEAD/README.md#cli)
+- [MCP](https://github.com/nirholas/solana-vanity/blob/HEAD/README.md#mcp)
+- [HTTP API](https://github.com/nirholas/solana-vanity/blob/HEAD/README.md#http-api)
+- [Documentation](https://github.com/nirholas/solana-vanity/blob/HEAD/README.md#documentation)
+- [Security model](https://github.com/nirholas/solana-vanity/blob/HEAD/README.md#security-model)
+- [AGENTS.md](https://github.com/nirholas/solana-vanity/blob/HEAD/AGENTS.md): guidance for coding agents
+- [Full text for LLMs](https://github.com/nirholas/solana-vanity/blob/HEAD/llms-full.txt): the README inlined
+
+## Project
+
+- [Source](https://github.com/nirholas/solana-vanity)
+- [Issues](https://github.com/nirholas/solana-vanity/issues)
+- [Discussions](https://github.com/nirholas/solana-vanity/discussions)
+- [Homepage](https://solana-vanity.gold-cornucopia.workers.dev)
+- [three.ws](https://three.ws): the platform this is part of
+- [All repositories by nirholas](https://github.com/nirholas/nirholas#readme)
