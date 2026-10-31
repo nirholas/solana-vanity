@@ -163,8 +163,7 @@ export function grindVanityMnemonic(opts = {}) {
 	while (performance.now() - startedAt < timeBudgetMs) {
 		for (let i = 0; i < BATCH_SIZE; i++) {
 			const mnemonic = generateMnemonic(strength);
-			const { keypair, derivationPath } = deriveSolanaKeypair(mnemonic);
-			const addr = keypair.publicKey.toBase58();
+			const { publicKey: addr, secretKey, derivationPath } = deriveSolanaKeypair(mnemonic);
 			attempts++;
 
 			if (wantPrefix) {
@@ -181,7 +180,7 @@ export function grindVanityMnemonic(opts = {}) {
 				wordCount: STRENGTH_WORD_COUNTS[strength],
 				derivationPath,
 				publicKey: addr,
-				secretKey: Uint8Array.from(keypair.secretKey),
+				secretKey,
 				attempts,
 				durationMs: performance.now() - startedAt,
 			};

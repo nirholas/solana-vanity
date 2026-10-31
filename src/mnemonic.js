@@ -1,6 +1,6 @@
 /**
  * BIP-39 mnemonic ↔ Solana keypair derivation — zero runtime dependencies
- * beyond Node's built-in `crypto` and `@solana/web3.js`.
+ * beyond Node's built-in `crypto`, `@noble/curves` and `bs58`.
  *
  * Why hand-rolled instead of pulling in `bip39` + `ed25519-hd-key`: this module
  * ships inside Vercel serverless functions and a published MCP package, and we
@@ -17,7 +17,8 @@
  */
 
 import { createHash, createHmac, pbkdf2Sync, randomBytes } from 'node:crypto';
-import { Keypair } from '@solana/web3.js';
+import { ed25519 } from '@noble/curves/ed25519.js';
+import bs58 from 'bs58';
 
 import { ENGLISH_WORDLIST } from './bip39-english.js';
 
@@ -173,15 +174,17 @@ export function deriveEd25519PrivateKey(seed, indices) {
 }
 
 /**
- * Full pipeline: mnemonic → Solana Keypair at the given BIP-44 path. The
- * returned Keypair's `secretKey` is the standard 64-byte Ed25519 form that
- * Phantom / Solflare / `solana-keygen` import directly.
+ * Full pipeline: mnemonic → Solana keypair at the given BIP-44 path. `secretKey`
+ * is the standard 64-byte Ed25519 form (32-byte seed then 32-byte public key)
+ * that Phantom / Solflare / `solana-keygen` import directly. The public key is
+ * derived with @noble/curves, so this stays synchronous and isomorphic and does
+ * not depend on the web3.js Keypair API.
  * @param {string} mnemonic
  * @param {object} [opts]
  * @param {number} [opts.account=0]   account index (the 3rd path level)
  * @param {number} [opts.change=0]    change index (the 4th path level)
  * @param {string} [opts.passphrase=''] BIP-39 passphrase
- * @returns {{ keypair: Keypair, derivationPath: string }}
+ * @returns {{ publicKey: string, secretKey: Uint8Array, derivationPath: string }}
  */
 export function deriveSolanaKeypair(mnemonic, opts = {}) {
 	const account = opts.account ?? 0;
@@ -189,5 +192,9 @@ export function deriveSolanaKeypair(mnemonic, opts = {}) {
 	const derivationPath = `m/${SOLANA_PURPOSE}'/${SOLANA_COIN_TYPE}'/${account}'/${change}'`;
 	const seed = mnemonicToSeed(mnemonic, opts.passphrase || '');
 	const priv = deriveEd25519PrivateKey(seed, parseDerivationPath(derivationPath));
-	return { keypair: Keypair.fromSeed(priv), derivationPath };
+	const publicBytes = ed25519.getPublicKey(priv);
+	const secretKey = new Uint8Array(64);
+	secretKey.set(priv, 0);
+	secretKey.set(publicBytes, 32);
+	return { publicKey: bs58.encode(publicBytes), secretKey, derivationPath };
 }
