@@ -2,9 +2,18 @@
   "name": "solana-vanity",
   "version": "1.0.0",
   "description": "Price, grind, delegate and verify Solana vanity addresses with an MCP server, CLI and split-key proof-of-grind.",
-  "author": {"name": "nirholas"},
+  "author": {
+    "name": "nirholas"
+  },
   "repository": "https://github.com/nirholas/solana-vanity",
   "homepage": "https://solana-vanity.gold-cornucopia.workers.dev",
   "license": "Apache-2.0",
-  "keywords": ["solana", "vanity-address", "ed25519", "base58", "split-key", "mcp"]
+  "keywords": [
+    "solana",
+    "vanity-address",
+    "ed25519",
+    "base58",
+    "split-key",
+    "mcp"
+  ]
 }

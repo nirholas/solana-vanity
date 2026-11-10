@@ -1,13 +1,21 @@
 {
   "name": "solana-vanity",
-  "owner": {"name": "nirholas"},
+  "owner": {
+    "name": "nirholas"
+  },
   "description": "Solana vanity address tooling: exact difficulty, local grinding, split-key delegation and certificate verification.",
   "plugins": [
     {
       "name": "solana-vanity",
-      "source": "./",
+      "source": "./plugins/solana-vanity",
       "description": "Price, grind, delegate and verify Solana vanity addresses with an MCP server and CLI.",
-      "tags": ["solana", "vanity-address", "mcp", "ed25519"]
+      "category": "development",
+      "tags": [
+        "solana",
+        "vanity-address",
+        "mcp",
+        "ed25519"
+      ]
     }
   ]
 }
