@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "solana-vanity": {
+      "command": "npx",
+      "args": ["-y", "solana-vanity", "mcp"]
+    }
+  }
+}
